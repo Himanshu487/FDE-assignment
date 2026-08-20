@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "node --require ./tsx-preload.cjs --import tsx/esm --watch src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
