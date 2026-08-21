@@ -10,7 +10,7 @@ app.use(cors()); app.use(express.json());
 const region = (value: unknown) => value === undefined || value === "" || value === "all" ? null : Number(value);
 
 app.get("/api/health", (_req,res) => { assertReadOnly(); res.json({status:"ok",database:"read-only"}); });
-app.get("/api/dashboard", async (req,res,next) => { try { const regionId=region(req.query.region); const data=analytics.getDashboard(regionId); const freight=await getFreight(data.context.quarter,regionId); res.json({...data,freight}); } catch(e){next(e);} });
+app.get("/api/dashboard", (req,res,next) => { try { const regionId=region(req.query.region); res.json(analytics.getDashboard(regionId)); } catch(e){next(e);} });
 app.get("/api/ask", async (req,res,next) => { try {
   const q=String(req.query.q??""); if(!q.trim()) return res.status(400).json({error:"Question is required"});
   const regionId=region(req.query.region);

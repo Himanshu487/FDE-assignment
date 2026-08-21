@@ -3,7 +3,9 @@ import {Bar,BarChart,CartesianGrid,ResponsiveContainer,Tooltip,XAxis,YAxis} from
 
 type Row=Record<string,number|string|null>;
 type Data=any;
-const pct=(v:number|null)=>v==null?"—":`${v.toFixed(1)}%`;
+// Keep very small, non-zero rates visible. A one-decimal percentage would turn
+// a 0.03% return rate into the misleading "0.0%".
+const pct=(v:number|null)=>v==null?"—":`${v.toFixed(v!==0&&Math.abs(v)<0.1?2:1)}%`;
 const inr=(v:number|null)=>v==null?"—":new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0,notation:v>999999?"compact":"standard"}).format(v);
 const number=(v:number|null)=>v==null?"—":new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(v);
 
@@ -25,7 +27,7 @@ export default function App(){
  
  if(error)return <main className="state"><h2>Control tower unavailable</h2><p>{error}</p><button onClick={()=>location.reload()}>Retry</button></main>;
  
- const s=data.service,r=data.returns,c=data.coldChain,f=data.freight;
+ const s=data.service,r=data.returns,c=data.coldChain;
  
  return <div className="app">
   <header><div className="brand"><div className="mark">K</div><div><b>KESTREL PROVISIONS</b><span>Supply Chain Control Tower</span></div></div><div className="period"><span>REPORTING PERIOD</span><b>{data.context.quarter.label} · Apr–Jun 2026</b><small>Data through {data.context.reportDate}</small></div><label className="filter"><span>VIEW</span><select value={region} onChange={e=>setRegion(e.target.value)}><option value="all">All India</option>{data.regions.map((x:any)=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label></header>
@@ -34,7 +36,6 @@ export default function App(){
     <Metric label="Each fill rate" value={pct(s.eachFill.value)} detail={`${number(s.eachFill.numerator)} / ${number(s.eachFill.denominator)} eaches`}/>
     <Metric label="Case fill rate" value={pct(s.caseFill.value)} detail={`${number(s.caseFill.numerator)} / ${number(s.caseFill.denominator)} cases`}/>
     <Metric label="OTIF" value={pct(s.otif.value)} detail={`${number(s.otif.numerator)} / ${number(s.otif.denominator)} orders`} tone="critical"/>
-    <Metric label="Freight / delivered case" value={f.status==="available"?inr(f.value):"Unavailable"} detail={f.status==="available"?`${inr(f.numerator)} across ${number(f.denominator)} cases`:"Partner API not configured — no fuel-cost fallback"} tone={f.status==="available"?"":"muted"}/>
     <Metric label="Returns" value={pct(r.returnRate.value)} detail={`${inr(r.approvedValue)} approved / ${inr(r.deliveredValue)} delivered`}/>
    </section>
    <section className="attention panel"><div className="section-title"><div><span className="eyebrow">EXCEPTION QUEUE</span><h2>Needs attention</h2></div><p>Lowest service performance first. Outlet view uses last complete month; other views use the quarter.</p></div><div className="attention-grid"><div><h3>Lowest-fill outlets <em>June</em></h3><Table rows={data.attention.outlets}/></div><div><h3>Lowest-fill routes <em>Quarter</em></h3><Table rows={data.attention.routes}/></div><div><h3>Routes repeatedly &gt;2h late</h3><Table rows={data.attention.lateRoutes.slice(0,5)} kind="late"/></div></div></section>
@@ -43,6 +44,6 @@ export default function App(){
     <div className="panel cold"><div className="section-title"><div><span className="eyebrow">COLD CHAIN</span><h2>Product integrity</h2></div><span className="snapshot">Snapshot {c.snapshotDate}</span></div><div className="cold-grid"><Metric label="Excursions / 100 chilled deliveries" value={c.excursionRate.value?.toFixed(1)??"—"} detail={`${number(c.excursionRate.numerator)} / ${number(c.excursionRate.denominator)} chilled deliveries`} tone="critical"/><Metric label="Near expiry ≤30 days" value={`${number(c.nearExpiryCases)} cases`} detail={`${number(c.nearExpiryBatches)} batches available`}/><Metric label="Chilled credit leakage" value={inr(c.coldCreditValue)} detail={`${number(c.coldCreditCount)} approved notes`}/></div></div>
    </section>
    <section className="panel ask"><div className="ask-copy"><span className="eyebrow">TRUSTED ANALYTICS</span><h2>Ask Kestrel</h2><p>Plain-English access to deterministic, reviewed queries. No generated SQL.</p><div className="chips">{["OTIF by region","Categories driving return value","Temperature excursions per 100 chilled deliveries","Routes >2 hours late"].map(q=><button key={q} onClick={()=>setQuestion(q)}>{q}</button>)}</div></div><div className="ask-box"><form onSubmit={ask}><input value={question} onChange={e=>setQuestion(e.target.value)} aria-label="Question"/><button disabled={asking}>{asking?"Working…":"Ask →"}</button></form>{answer&&<div className="answer"><b>{answer.title}</b><p>{answer.explanation}</p>{answer.rows?.length>0&&<div className="answer-rows">{answer.rows.slice(0,5).map((x:Row,i:number)=><div key={i}><span>{String(x.name??x.month??x.sku_code??`Result ${i+1}`)}</span><b>{x.case_fill!=null?pct(Number(x.case_fill)):x.otif!=null?pct(Number(x.otif)):x.value!=null?inr(Number(x.value)):x.excursions_per_100!=null?String(x.excursions_per_100):""}</b></div>)}</div>}</div>}</div></section>
-  </main><footer>Definitions & assumptions are documented in README.md · Source database opened read-only · Freight never uses driver-entered fuel cost</footer>
+  </main><footer>Definitions & assumptions are documented in README.md · Source database opened read-only</footer>
  </div>
 }
