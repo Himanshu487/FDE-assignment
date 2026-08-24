@@ -36,6 +36,7 @@ The dashboard is intentionally exception-first. The most important problems are 
 - Express
 - TypeScript
 - SQLite (`better-sqlite3`)
+- Google Gen AI SDK (`@google/genai`)
 
 **Testing**
 - Vitest
@@ -154,20 +155,26 @@ Ask Kestrel provides a simple way to query the operational data without navigati
 Examples:
 
 ```text
-Which five outlets had the lowest case fill rate last month?
-
-What was OTIF by region for the last complete quarter?
-
-Which categories are driving the highest return value?
-
-Which routes are more than two hours late on more than 10% of deliveries?
-
-Why did fill rate drop in the West last week?
-
-Which outlets ordered discontinued SKUs?
+Which warehouse had the worst OTIF in Q1?
+Which region has the lowest fill rate?
+What are the biggest cold-chain issues?
+Which carrier has the highest freight cost?
+Where are the highest returns?
 ```
 
-Questions are mapped to reviewed analytical queries rather than directly generating SQL. This keeps the metric definitions consistent between the dashboard and the answers returned by Ask Kestrel.
+Ask Kestrel sends the user's question to Gemini from the Express server, never from the browser. Add your Gemini API key to `.env` (which must not be committed):
+
+```env
+GEMINI_API_KEY=<your-api-key>
+# Optional. Defaults to gemini-2.5-flash.
+GEMINI_MODEL=gemini-3.6-flash
+```
+
+Gemini first selects one operation from an allowlist of reviewed analytics functions. Express runs that function with fixed parameters, then supplies its result to Gemini for a concise answer. Gemini cannot submit SQL, and SQLite remains read-only. If no Gemini key is configured, Ask Kestrel shows a configuration error rather than silently returning a non-AI fallback. The default is `gemini-3.6-flash`; Google no longer makes `gemini-2.5-flash` available to new users.
+
+The existing Plain-English Question Box calls `POST /api/chat` (`POST /api/ask` remains as a compatibility alias). When the server starts, its terminal prints whether Gemini is configured. Ask Kestrel also shows a visible error in the dashboard and a detailed server-console error if the key, model, or API request fails.
+
+The current delivery and partner-invoice data has no carrier identifier, so carrier-ranking questions explicitly report that limitation instead of fabricating a carrier result. Warehouse freight ranking remains available.
 
 ## Data Notes
 
@@ -191,6 +198,7 @@ The source data itself is left unchanged.
 │       └── services/
 │           ├── analytics.ts
 │           ├── ask.ts
+│           ├── gemini.ts
 │           └── freight.ts
 ├── data/                   Local operational database
 ├── tests/

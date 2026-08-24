@@ -2,7 +2,7 @@
 
 ## Built
 
-One professional, responsive control-tower page covering each/case fill, true OTIF, exception queues, approved-return leakage, cold-chain risk, partner freight, post-discontinuation ordering, and deterministic Ask Kestrel. Express keeps controllers thin; reviewed parameterized queries aggregate in a read-only SQLite connection. Vitest covers conversions, periods, percentages, freight normalization, DB mode, and the OTIF invariant.
+One professional, responsive control-tower page covering each/case fill, true OTIF, exception queues, approved-return leakage, cold-chain risk, partner freight, post-discontinuation ordering, and Gemini-assisted Ask Kestrel. Gemini selects only from an allowlist of analytics intents; Express executes reviewed functions and never generated SQL. Reviewed parameterized queries aggregate in a read-only SQLite connection. Vitest covers conversions, periods, percentages, freight normalization, DB mode, and the OTIF invariant.
 
 ## Assumptions and definitions
 

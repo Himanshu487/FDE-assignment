@@ -91,6 +91,7 @@ function coldChain(period: Period, regionId: RegionFilter, reportDate: string) {
 }
 
 type Dimension = "outlet" | "route" | "warehouse" | "region";
+type ServiceMetric = "case_fill" | "otif";
 const dimensions = {
   outlet: { id: "x.outlet_id", name: "x.outlet_name" },
   route: { id: "rt.route_id", name: "rt.route_name" },
@@ -98,8 +99,9 @@ const dimensions = {
   region: { id: "rg.region_id", name: "rg.region_name" },
 };
 
-export function serviceBreakdown(dimension: Dimension, period: Period, regionId: RegionFilter, limit = 8) {
+export function serviceBreakdown(dimension: Dimension, period: Period, regionId: RegionFilter, limit = 8, metric: ServiceMetric = "case_fill") {
   const d = dimensions[dimension];
+  const orderBy = metric === "otif" ? "otif" : "case_fill";
   return many(`SELECT ${d.id} id, ${d.name} name, COUNT(DISTINCT o.order_id) orders,
       ROUND(100.0*SUM(l.delivered_qty/CASE WHEN l.qty_uom='CASE' THEN 1.0 ELSE l.case_pack_at_order END)/
         NULLIF(SUM(l.ordered_qty/CASE WHEN l.qty_uom='CASE' THEN 1.0 ELSE l.case_pack_at_order END),0),2) case_fill,
@@ -109,7 +111,7 @@ export function serviceBreakdown(dimension: Dimension, period: Period, regionId:
       LEFT JOIN deliveries dv USING(order_id) LEFT JOIN routes rt ON rt.route_id=o.route_id
       LEFT JOIN warehouses w ON w.warehouse_id=o.warehouse_id LEFT JOIN regions rg ON rg.region_id=o.region_id
     WHERE o.order_date>=@start AND o.order_date<@end AND ${eligible}
-    GROUP BY ${d.id},${d.name} HAVING COUNT(DISTINCT o.order_id)>=5 ORDER BY case_fill ASC LIMIT @limit`, { ...params(period, regionId), limit });
+    GROUP BY ${d.id},${d.name} HAVING COUNT(DISTINCT o.order_id)>=5 ORDER BY ${orderBy} ASC LIMIT @limit`, { ...params(period, regionId), limit });
 }
 
 function lateRoutes(period: Period, regionId: RegionFilter) {
@@ -151,4 +153,16 @@ export function getDashboard(regionId: RegionFilter = null) {
     regions: many("SELECT region_id id, region_name name FROM regions WHERE status='ACTIVE' ORDER BY region_name") };
 }
 
-export const analytics = { getDashboard, getReportContext, serviceBreakdown, discontinuedOrders };
+const getRegions = () => many("SELECT region_id id, region_name name FROM regions WHERE status='ACTIVE' ORDER BY region_name");
+
+export const analytics = {
+  getDashboard,
+  getReportContext,
+  serviceBreakdown,
+  discontinuedOrders,
+  getReturns: returns,
+  getColdChain: coldChain,
+  getLateRoutes: lateRoutes,
+  getTrends: trends,
+  getRegions,
+};
